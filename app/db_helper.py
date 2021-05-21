@@ -1,7 +1,31 @@
 # import pymongo
 from pymongo import MongoClient
+from app.models.videos import Video
 
 videosCollection = None
+
+
+def create_posts(videos : list):
+    """
+    Create list of dictionaries from Video classes
+    :return: List of Dictionaries
+    """
+    posts = []
+    try: 
+        for video in videos:
+            post = {
+                "_id": video.id,
+                "title": video.title,
+                "description": video.description,
+                "published_at": video.published_at,
+                "thumbnail_url": video.thumbnail_url
+            }
+            posts.append(post)
+    except Exception as e:
+        print("ERROR: Creation of posts from videos failed: {0}".format(e))
+        raise e
+    return posts
+
 
 def create_connection(collection_name="Videos"):
     """
@@ -24,26 +48,38 @@ def create_connection(collection_name="Videos"):
         print("Connection Successful.")
     except Exception as e:
         print("CONNECT ERROR: {0}".format(e))
+        raise e
 
 
-def insert_video():
+def insert_video(video : Video):
+    """
+    Insert a single video into database
+    :return: None
+    """
+    # Pass the video in a list to the insert_videos() method
+    insert_videos([video])
+
+
+def insert_videos(videos : list):
+    """
+    Insert videos into the database
+    :return: None
+    """
     global videosCollection
-    # create_connection()
-    video = {
-        "_id": 3,
-        "title" : "Sample Title", 
-        "description": "Sample Description",
-        "publishedAt" : "2021-05-21 19:45:22",
-        "thumbnailUrl" : "https://blah.com"
-    }
-
-    print("videosCollection is: {0}".format(videosCollection))
     try:
-        videosCollection.insert_one(video)
+        if videosCollection is None: # Database not connected
+            create_connection() # Connect the database
+        
+        if len(videos) == 0:
+            print("WARNING: The video list is empty. Skipping Insertion")
+            return
+
+        videosCollection.insert_many(create_posts(videos))
+        print("SUCCESS: Inserting Videos into database successful.")
     except Exception as e:
-        print("ERROR inserting video: {0}".format(str(e)))
+        print("ERROR Inserting videos: {0}".format(str(e)))
+        raise e
+
 
 if __name__ == '__main__':
-    # videosCollection = create_connection()
-    create_connection()
-    insert_video()
+    pass
