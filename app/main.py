@@ -5,6 +5,6 @@ def create_app(testing : bool =  True):
     
     @app.route("/")
     def index():
-        return "Hello World Wsup!!! {0}".format(testing)
+        return "Hello World !!! {0}".format(testing)
 
     return app
