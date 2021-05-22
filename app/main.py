@@ -2,8 +2,15 @@ from flask import Flask, request, make_response, jsonify
 import time
 import threading
 import app.db_helper as DbHelper
+from functools import wraps
+
 
 SCHEDULER_ACTIVE = False
+
+# Auth enums
+AUTH_KEY_INVALID = -1
+AUTH_KEY_EXPIRED = 0
+AUTH_KEY_VALID = 1
 
 def synchronise(url, query, api_key, published_after, max_results):
     global SCHEDULER_ACTIVE
@@ -28,17 +35,57 @@ def create_app(testing : bool =  True):
     app.config["PUBLISHED_AFTER"] = "2021-05-22T10:00:00Z"
     app.config["MAX_RESULTS"] = 50
     app.config["YOUTUBE_URL"] = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&key={api_key}&q={query}&publishedAfter={published_after}&maxResults={max_results}"
+    app.config["FAMPAY_KEY"] = "17yEEyXAqeS9JNDpTlBvKLUBr9CfRP1ay4kf"
 
     SCHEDULER_ACTIVE = False
 
+    def api_required(f) :
+        @wraps(f)
+        def wrap(*args,**kwargs):
+            auth_status = DbHelper.is_api_authentic(app.config["FAMPAY_KEY"])
+            message = ""
+            if auth_status == AUTH_KEY_EXPIRED:
+                message = "API Key has EXPIRED. Restricting access."
+            elif auth_status == AUTH_KEY_INVALID:
+                message = "API Key is INVALID. Restricting access."
+            elif auth_status == AUTH_KEY_VALID:
+                message = "API Key is VALID. Allowing access."
+            
+            return f({
+                "message": message,
+                "authStatus": auth_status > 0
+            }, *args, **kwargs)
+        return wrap
+
+    def authenticate():
+        auth_status = DbHelper.is_api_authentic(app.config["FAMPAY_KEY"])
+        message = ""
+        if auth_status == AUTH_KEY_EXPIRED:
+            message = "API Key has EXPIRED. Restricting access."
+        elif auth_status == AUTH_KEY_INVALID:
+            message = "API Key is INVALID. Restricting access."
+        elif auth_status == AUTH_KEY_VALID:
+            message = "API Key is VALID. Allowing access."
+        
+        return f({
+            "message": message,
+            "authStatus": auth_status > 0
+        }, *args, **kwargs)
+
     @app.route("/")
+    @api_required
     def index():
+        if not auth["authStatus"]:
+            return auth["message"]
         global SCHEDULER_ACTIVE
         SCHEDULER_ACTIVE = False
         return "Hello World !!! {0}".format(testing)
 
     @app.route("/search/")
-    def search():
+    @api_required
+    def search(auth):
+        if not auth["authStatus"]:
+            return auth["message"]
         global SCHEDULER_ACTIVE
         query = request.args.get("query")
         print(query)
@@ -54,7 +101,10 @@ def create_app(testing : bool =  True):
 
 
     @app.route("/get/", methods=["GET"])
-    def get_videos():
+    @api_required
+    def get_videos(auth):
+        if not auth["authStatus"]:
+            return auth["message"]
         page_number = request.args.get("pageNumber")
         max_results = request.args.get("maxResults")
         if page_number is None:
@@ -82,7 +132,10 @@ def create_app(testing : bool =  True):
 
 
     @app.route("/search_videos/", methods=["GET"])
-    def search_videos():
+    @api_required
+    def search_videos(auth):
+        if not auth["authStatus"]:
+            return auth["message"]
         query = request.args.get('query')
         if query is None:
             return "You got to add the 'query' param to the url"
@@ -109,6 +162,16 @@ def create_app(testing : bool =  True):
             200,
         )
         response.headers["Content-Type"] = "application/json"
+        return response
+
+
+    @app.route("/create_api/", methods=["GET"])
+    def create_api():
+        api_credentials = DbHelper.create_api_key()
+        response = make_response(
+            jsonify(api_credentials),
+            200,
+        )
         return response
 
     return app

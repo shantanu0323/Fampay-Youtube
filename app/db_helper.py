@@ -4,9 +4,11 @@ from app.models.video import Video
 import requests
 import json
 import math as Math
+import random
+import string
+import datetime
 
-videosCollection = None
-
+collection = None
 
 def create_posts(videos : list):
     """
@@ -35,10 +37,11 @@ def create_connection(collection_name="Videos"):
     Creating the connection to MongoDB
     :return: None
     """
-    global videosCollection
+    global collection
     cluster = None
+    
     try:
-        print("Connecting to MongoDB ... ")
+        print(f"Connecting to MongoDB::{collection_name}... ")
 
         # Earlier method is faster hence going with this
         cluster = MongoClient("mongodb://fampay:fampay@fampay-assignment-shard-00-00.fjsns.mongodb.net:27017,fampay-assignment-shard-00-01.fjsns.mongodb.net:27017,fampay-assignment-shard-00-02.fjsns.mongodb.net:27017/YoutubeStorage?ssl=true&replicaSet=atlas-955f8y-shard-0&authSource=admin&retryWrites=true&w=majority")
@@ -47,7 +50,7 @@ def create_connection(collection_name="Videos"):
         # cluster = MongoClient("mongodb+srv://fampay:fampay@fampay-assignment.fjsns.mongodb.net/YoutubeStorage?retryWrites=true&w=majority")
         
         db = cluster["YoutubeStorage"]
-        videosCollection = db["Videos"]
+        collection = db[collection_name]
         print("Connection Successful.")
     except Exception as e:
         print("CONNECT ERROR: {0}".format(e))
@@ -68,16 +71,16 @@ def insert_videos(videos : list):
     Insert videos into the database
     :return: None
     """
-    global videosCollection
+    global collection
     try:
-        if videosCollection is None: # Database not connected
+        if collection is None: # Database not connected
             create_connection() # Connect the database
         
         if len(videos) == 0:
             print("WARNING: The video list is empty. Skipping Insertion")
             return
 
-        videosCollection.insert_many(create_posts(videos))
+        collection.insert_many(create_posts(videos))
         print("SUCCESS: Inserting Videos into database successful.")
     except Exception as e:
         print("ERROR Inserting videos: {0}".format(str(e)))
@@ -89,12 +92,12 @@ def delete_all_videos():
     Delete all the videos from the database
     :return: None
     """
-    global videosCollection
+    global collection
     try:
-        if videosCollection is None: # Database not connected
+        if collection is None: # Database not connected
             create_connection() # Connect the database
         
-        videosCollection.delete_many({})
+        collection.delete_many({})
         print("SUCCESS: All videos deleted from database.")
     except Exception as e:
         print("ERROR Deleting videos: {0}".format(str(e)))
@@ -159,12 +162,12 @@ def get_videos_from_db(page_number, max_results):
     GET videos from the database
     :return: videos, response message, total pages, page number
     """
-    global videosCollection
+    global collection
     try:
-        if videosCollection is None: # Database not connected
+        if collection is None: # Database not connected
             create_connection() # Connect the database
         
-        videos = list(videosCollection.find().sort("publishedAt", -1))
+        videos = list(collection.find().sort("publishedAt", -1))
         total_pages = Math.ceil(len(videos) / max_results)
 
         response_msg = "success"
@@ -186,15 +189,15 @@ def search_videos_from_db(query, page_number, max_results):
     Search videos from the database
     :return: videos, response message, total pages, page number
     """
-    global videosCollection
+    global collection
     try:
-        if videosCollection is None: # Database not connected
+        if collection is None: # Database not connected
             create_connection() # Connect the database
         
         print(f"Searching for '{query}'")
-        videosCollection.drop_indexes()
-        videosCollection.create_index([('title', TEXT), ('description', TEXT)], name="desc_index")
-        videos = list(videosCollection.find({"$text": {"$search": query}}).sort('publishedAt', -1))
+        collection.drop_indexes()
+        collection.create_index([('title', TEXT), ('description', TEXT)], name="desc_index")
+        videos = list(collection.find({"$text": {"$search": query}}).sort('publishedAt', -1))
         total_pages = Math.ceil(len(videos) / max_results)
 
         response_msg = "success"
@@ -210,6 +213,70 @@ def search_videos_from_db(query, page_number, max_results):
         response_msg = "failed: Getting videos from DB: {0}".format(str(e))
         print(e)
         return [], response_msg, 0, 1
+
+
+def create_api_key():
+    print("Creating API Key.")
+    # Create an API key
+    api_key = ''.join(random.choices(string.ascii_letters + string.digits, k=36))
+    current_timestamp = datetime.datetime.now()
+    expiry_timestamp = current_timestamp + datetime.timedelta(weeks=12)
+    expiry = datetime.datetime.strftime(expiry_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    api_credentials = {
+        "apiKey": api_key,
+        "expiry": expiry,
+        "status": "success"
+    }
+
+    # Push it to the DB along with the expiry timestamp
+    global collection
+    collection = None
+    try:
+        create_connection("APIKeys") # Connect the database
+        post = api_credentials.copy()
+        post['_id'] = api_key
+        post.pop("status")
+        collection.insert_one(post)
+        print("SUCCESS: API Creation successful.")
+        return api_credentials
+    except Exception as e:
+        return {
+            "message": "ERROR Creating API: {0}".format(str(e)),
+            "status": "failed"
+        }
+    finally:
+        collection=None
+
+
+def is_api_authentic(api_key):
+    """
+    Checks the authenticity of the API Key
+    :return: Auth Status
+    """
+    global collection
+    try:
+        create_connection("APIKeys") # Connect the database
+        
+        results = list(collection.find())
+        print(results)
+        api_doc = collection.find_one({"apiKey": api_key})
+        print(api_doc)
+        if api_doc is None:
+            return -1
+        else:
+            expiry = datetime.datetime.strptime(api_doc["expiry"], "%Y-%m-%dT%H:%M:%SZ")
+            if expiry < datetime.datetime.now():
+                return 0
+        return 1
+
+
+    except Exception as e:
+        response_msg = "failed: Getting APIs from DB: {0}".format(str(e))
+        return -1
+    finally:
+        collection=None
+
+
 
 
 if __name__ == '__main__':
