@@ -1,5 +1,5 @@
 # import pymongo
-from pymongo import MongoClient
+from pymongo import MongoClient, TEXT
 from app.models.video import Video
 import requests
 import json
@@ -157,7 +157,7 @@ def sync_db_with_yt(url, query, api_key, published_after, max_results):
 def get_videos_from_db(page_number, max_results):
     """
     GET videos from the database
-    :return: None
+    :return: videos, response message, total pages, page number
     """
     global videosCollection
     try:
@@ -178,6 +178,37 @@ def get_videos_from_db(page_number, max_results):
     
     except Exception as e:
         response_msg = "failed: Getting videos from DB: {0}".format(str(e))
+        return [], response_msg, 0, 1
+
+
+def search_videos_from_db(query, page_number, max_results):
+    """
+    Search videos from the database
+    :return: videos, response message, total pages, page number
+    """
+    global videosCollection
+    try:
+        if videosCollection is None: # Database not connected
+            create_connection() # Connect the database
+        
+        print(f"Searching for '{query}'")
+        videosCollection.drop_indexes()
+        videosCollection.create_index([('title', TEXT), ('description', TEXT)], name="desc_index")
+        videos = list(videosCollection.find({"$text": {"$search": query}}).sort('publishedAt', -1))
+        total_pages = Math.ceil(len(videos) / max_results)
+
+        response_msg = "success"
+        if page_number < 1 or page_number > total_pages:
+            response_msg = "failed: Invalid pageNumber provided. Returning the first page."
+            page_number = 1
+        start = max_results * (page_number-1)
+        videos = videos[start : start + max_results]
+        print("SUCCESS: Getting Videos from database successful.")
+        return videos, response_msg, total_pages, page_number
+    
+    except Exception as e:
+        response_msg = "failed: Getting videos from DB: {0}".format(str(e))
+        print(e)
         return [], response_msg, 0, 1
 
 

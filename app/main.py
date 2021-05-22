@@ -79,6 +79,37 @@ def create_app(testing : bool =  True):
         )
         response.headers["Content-Type"] = "application/json"
         return response
-    
+
+
+    @app.route("/search_videos/", methods=["GET"])
+    def search_videos():
+        query = request.args.get('query')
+        if query is None:
+            return "You got to add the 'query' param to the url"
+        page_number = request.args.get("pageNumber")
+        max_results = request.args.get("maxResults")
+        if page_number is None:
+            page_number = 1
+        else:
+            page_number = int(page_number)
+        if max_results is None:
+            max_results = 10
+        else:
+            max_results = int(max_results)
+        
+        videos, response_msg, total_pages, page_number = DbHelper.search_videos_from_db(query, page_number, max_results)
+        response = make_response(
+            jsonify({
+                "videos": videos,
+                "noOfVideos": len(videos),
+                "response": response_msg,
+                "totalPages": total_pages,
+                "pageNumber": page_number
+            }),
+            200,
+        )
+        response.headers["Content-Type"] = "application/json"
+        return response
+
     return app
 
