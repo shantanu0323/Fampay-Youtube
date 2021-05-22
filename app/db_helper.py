@@ -3,6 +3,8 @@ from pymongo import MongoClient
 from app.models.video import Video
 import requests
 import json
+import math as Math
+
 videosCollection = None
 
 
@@ -18,8 +20,8 @@ def create_posts(videos : list):
                 "_id": video.id,
                 "title": video.title,
                 "description": video.description,
-                "published_at": video.published_at,
-                "thumbnail_url": video.thumbnail_url
+                "publishedAt": video.published_at,
+                "thumbnailUrl": video.thumbnail_url
             }
             posts.append(post)
     except Exception as e:
@@ -150,6 +152,34 @@ def sync_db_with_yt(url, query, api_key, published_after, max_results):
     except Exception as e:
         print("ERROR: Synchronising Failed -> {}".format(str(e)))
         raise e
+
+
+def get_videos_from_db(page_number, max_results):
+    """
+    GET videos from the database
+    :return: None
+    """
+    global videosCollection
+    try:
+        if videosCollection is None: # Database not connected
+            create_connection() # Connect the database
+        
+        videos = list(videosCollection.find().sort("publishedAt", -1))
+        total_pages = Math.ceil(len(videos) / max_results)
+
+        response_msg = "success"
+        if page_number < 1 or page_number > total_pages:
+            response_msg = "failed: Invalid pageNumber provided. Returning the first page."
+            page_number = 1
+        start = max_results * (page_number-1)
+        videos = videos[start : start + max_results]
+        print("SUCCESS: Getting Videos from database successful.")
+        return videos, response_msg, total_pages, page_number
+    
+    except Exception as e:
+        response_msg = "failed: Getting videos from DB: {0}".format(str(e))
+        return [], response_msg, 0, 1
+
 
 if __name__ == '__main__':
     pass

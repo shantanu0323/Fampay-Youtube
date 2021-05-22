@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, make_response, jsonify
 import time
 import threading
 import app.db_helper as DbHelper
@@ -23,10 +23,10 @@ def create_app(testing : bool =  True):
     global SCHEDULER_ACTIVE
     app = Flask(__name__)
     app.debug = True
-    
+
     app.config["YOUTUBE_API_KEY"] = "AIzaSyC4jvBZgNGWjtwvjsGNKcbrZ1ddS82K8BY"
     app.config["PUBLISHED_AFTER"] = "2021-05-22T10:00:00Z"
-    app.config["MAX_RESULTS"] = 5
+    app.config["MAX_RESULTS"] = 50
     app.config["YOUTUBE_URL"] = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&key={api_key}&q={query}&publishedAfter={published_after}&maxResults={max_results}"
 
     SCHEDULER_ACTIVE = False
@@ -52,5 +52,33 @@ def create_app(testing : bool =  True):
         )).start()
         return "Synchronising..."
 
+
+    @app.route("/get/", methods=["GET"])
+    def get_videos():
+        page_number = request.args.get("pageNumber")
+        max_results = request.args.get("maxResults")
+        if page_number is None:
+            page_number = 1
+        else:
+            page_number = int(page_number)
+        if max_results is None:
+            max_results = 10
+        else:
+            max_results = int(max_results)
+
+        videos, response_msg, total_pages, page_number = DbHelper.get_videos_from_db(page_number, max_results)
+        response = make_response(
+            jsonify({
+                "videos": videos,
+                "noOfVideos": len(videos),
+                "response": response_msg,
+                "totalPages": total_pages,
+                "pageNumber": page_number
+            }),
+            200,
+        )
+        response.headers["Content-Type"] = "application/json"
+        return response
+    
     return app
 
