@@ -1,6 +1,6 @@
 # import pymongo
 from pymongo import MongoClient
-from app.models.videos import Video
+from app.models.video import Video
 
 videosCollection = None
 
@@ -79,6 +79,25 @@ def insert_videos(videos : list):
     except Exception as e:
         print("ERROR Inserting videos: {0}".format(str(e)))
         raise e
+
+
+def sync_db_with_yt(url, query, api_key, published_after, max_results):
+    """
+    Synchronises the db with the latest videos fetched from the Youtube API
+    :return: None
+    """
+    # Fetching the latest videos
+    request_url = url.format(
+        api_key=api_key,
+        query=query,
+        published_after=published_after,
+        max_results=max_results
+    )
+    print(request_url)
+
+    # Parsing the videos and extracting the necessary data
+
+    # Putting the parsed data into db
 
 
 if __name__ == '__main__':
