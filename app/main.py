@@ -10,7 +10,8 @@ def synchronise(url, query, api_key, published_after, max_results):
     print("*" * 40)
     print("Task execution started...")
     print(SCHEDULER_ACTIVE)
-    DbHelper.sync_db_with_yt(url, query, api_key, published_after, max_results)
+    threading.Thread(target=DbHelper.sync_db_with_yt, args=(url, query, api_key, published_after, max_results)).start()
+    # DbHelper.sync_db_with_yt(url, query, api_key, published_after, max_results)
     time.sleep(10)
     print("Task execution completed.")
     if (SCHEDULER_ACTIVE):
@@ -21,10 +22,11 @@ def synchronise(url, query, api_key, published_after, max_results):
 def create_app(testing : bool =  True):
     global SCHEDULER_ACTIVE
     app = Flask(__name__)
-
+    app.debug = True
+    
     app.config["YOUTUBE_API_KEY"] = "AIzaSyC4jvBZgNGWjtwvjsGNKcbrZ1ddS82K8BY"
-    app.config["PUBLISHED_AFTER"] = "2021-05-22T00:00:00Z"
-    app.config["MAX_RESULTS"] = 50
+    app.config["PUBLISHED_AFTER"] = "2021-05-22T10:00:00Z"
+    app.config["MAX_RESULTS"] = 5
     app.config["YOUTUBE_URL"] = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&key={api_key}&q={query}&publishedAfter={published_after}&maxResults={max_results}"
 
     SCHEDULER_ACTIVE = False
