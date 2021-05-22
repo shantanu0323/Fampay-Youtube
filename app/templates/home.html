@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+
+	<title>The HTML5 Herald</title>
+	<meta name="description" content="The HTML5 Herald">
+	<meta name="author" content="SitePoint">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/home.css') }}?u={{ LAST_UPDATED }}">
+
+</head>
+
+<body>
+	<nav>
+		<span>
+			<span class="text-red">YouTube</span> Connecting me to <span class="text-orange">FamPay</span>
+		</span>
+	</nav>
+	
+	<section class="videos-section">
+		<div class="filters-container"></div>
+		<div class="videos-list-container">
+			<!-- <div class="video-container" id="video-id">
+				<img class="video-thumbnail" src="https://i.ytimg.com/vi/8uCuvuNJbGw/hqdefault.jpg" alt="Thumbnail">
+				<div class="video-right-container">
+					<span class="video-title">This is the Title</span>
+					<span class="video-description">This is the long description</span>
+					<br>
+					<span class="video-published-at">2021-05-22T10:45:43Z</span>
+					<a class="video-youtube-link" href="https://www.youtube.com/watch?v=dVEjSmKFUVI">Watch on Youtube</a>
+				</div>
+			</div> -->
+		</div>
+		<div class="pagination-container"></div>
+	</section>
+
+	<footer>
+		<span>Made with <3 by Shantanu Pramanik</span>
+	</footer>
+	<script src="{{ url_for('static', filename='assets/js/home.js') }}?u={{ LAST_UPDATED }}"></script>
+</body>
+</html>

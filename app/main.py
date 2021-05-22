@@ -1,8 +1,11 @@
-from flask import Flask, request, make_response, jsonify
+from flask import Flask, request, make_response, jsonify, render_template, redirect
 import time
 import threading
+
+from flask.helpers import url_for
 import app.db_helper as DbHelper
 from functools import wraps
+import os
 
 
 SCHEDULER_ACTIVE = False
@@ -19,11 +22,16 @@ def synchronise(url, query, api_key, published_after, max_results):
     print(SCHEDULER_ACTIVE)
     threading.Thread(target=DbHelper.sync_db_with_yt, args=(url, query, api_key, published_after, max_results)).start()
     # DbHelper.sync_db_with_yt(url, query, api_key, published_after, max_results)
-    time.sleep(10)
+    time.sleep(60)
     print("Task execution completed.")
     if (SCHEDULER_ACTIVE):
         synchronise(url, query, api_key, published_after, max_results)
     return
+
+
+
+def dir_last_updated(folder="static/assets"):
+    return os.path.getmtime(f"app/{folder}")
 
 
 def create_app(testing : bool =  True):
@@ -55,26 +63,27 @@ def create_app(testing : bool =  True):
                 "message": message,
                 "authStatus": auth_status > 0
             }, *args, **kwargs)
+        
         return wrap
 
-    def authenticate():
-        auth_status = DbHelper.is_api_authentic(app.config["FAMPAY_KEY"])
-        message = ""
-        if auth_status == AUTH_KEY_EXPIRED:
-            message = "API Key has EXPIRED. Restricting access."
-        elif auth_status == AUTH_KEY_INVALID:
-            message = "API Key is INVALID. Restricting access."
-        elif auth_status == AUTH_KEY_VALID:
-            message = "API Key is VALID. Allowing access."
+    # def authenticate():
+    #     auth_status = DbHelper.is_api_authentic(app.config["FAMPAY_KEY"])
+    #     message = ""
+    #     if auth_status == AUTH_KEY_EXPIRED:
+    #         message = "API Key has EXPIRED. Restricting access."
+    #     elif auth_status == AUTH_KEY_INVALID:
+    #         message = "API Key is INVALID. Restricting access."
+    #     elif auth_status == AUTH_KEY_VALID:
+    #         message = "API Key is VALID. Allowing access."
         
-        return f({
-            "message": message,
-            "authStatus": auth_status > 0
-        }, *args, **kwargs)
+    #     return f({
+    #         "message": message,
+    #         "authStatus": auth_status > 0
+    #     }, *args, **kwargs)
 
     @app.route("/")
     @api_required
-    def index():
+    def index(auth):
         if not auth["authStatus"]:
             return auth["message"]
         global SCHEDULER_ACTIVE
@@ -97,7 +106,7 @@ def create_app(testing : bool =  True):
             app.config["PUBLISHED_AFTER"], 
             app.config["MAX_RESULTS"]
         )).start()
-        return "Synchronising..."
+        return redirect(url_for('dashboard'))
 
 
     @app.route("/get/", methods=["GET"])
@@ -173,6 +182,11 @@ def create_app(testing : bool =  True):
             200,
         )
         return response
+
+
+    @app.route("/dashboard/")
+    def dashboard():
+        return render_template("home.html", LAST_UPDATED=dir_last_updated())
 
     return app
 

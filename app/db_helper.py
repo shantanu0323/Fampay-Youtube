@@ -257,10 +257,7 @@ def is_api_authentic(api_key):
     try:
         create_connection("APIKeys") # Connect the database
         
-        results = list(collection.find())
-        print(results)
         api_doc = collection.find_one({"apiKey": api_key})
-        print(api_doc)
         if api_doc is None:
             return -1
         else:

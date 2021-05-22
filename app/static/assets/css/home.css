@@ -1,0 +1,109 @@
+* {
+    padding: 0;
+    margin: 0;
+    font-family: Helvetica;
+}
+
+body {
+    background-color: #eeeeee;
+    padding: 0;
+    margin: 0;
+}
+
+nav {
+    display: block;
+    width: 100vw;
+    height: 56px;
+    background-color: rgb(6, 15, 22);
+    color:white;
+    text-align: center;
+}
+
+nav > span {
+    display: inline-block;
+    margin-top: 15px;    
+}
+
+nav > span span.text-red {
+    color: rgb(197, 0, 0);
+    font-weight: bold
+}
+
+nav > span span.text-orange {
+    color: orange;
+    font-weight: bold
+}
+
+footer {
+    background-color: rgb(6, 15, 22);
+    text-align: center;
+    color: grey;
+    width: 100vw;
+    height: 40px;
+    position: fixed;
+    bottom: 0;
+}
+
+footer span {
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.videos-section .videos-list-container .video-container {
+    display: block;
+    width: 70vw;
+    float: left;
+    height: auto;
+    padding-bottom: 10px;
+    margin-left: 15vw;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color:rgb(211, 211, 211);
+}
+
+.videos-section .videos-list-container .video-container .video-thumbnail {
+    width: 240px;
+    height: 135px;
+    object-fit: cover;
+    border: 1px solid black;
+    display: block;
+    float: left;
+}
+
+.videos-section .videos-list-container .video-container .video-right-container {
+    margin-top: 5px;
+    margin-left: 10px;
+    display: block;
+    background: #9acd3;
+    float: left;
+    width: calc(70vw - 260px);
+}
+
+.videos-section .videos-list-container .video-container .video-title {
+    font-size:1.2em;
+    font-weight: bold;
+    display: block;
+}
+
+.videos-section .videos-list-container .video-container .video-description {
+    font-weight: lighter;
+    font-size: 0.9em;
+    display: block;
+}
+
+.videos-section .videos-list-container .video-container .video-published-at {
+    display: block;
+    color: rgb(58, 58, 58);
+}
+
+.videos-section .videos-list-container .video-container .video-youtube-link {
+    display: block;
+    text-decoration: none;
+    background-color: rgb(190, 0, 0);
+    color: white;
+    font-size: 0.9em;
+    padding: 5px 10px 5px 10px;
+    text-align: center;
+    border-radius: 5px;
+    width: 200px;
+}
