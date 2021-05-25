@@ -95,7 +95,7 @@ def delete_all_videos():
     global collection
     try:
         if collection is None: # Database not connected
-            create_connection() # Connect the database
+            create_connection("Videos") # Connect the database
         
         collection.delete_many({})
         print("SUCCESS: All videos deleted from database.")

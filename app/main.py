@@ -22,7 +22,7 @@ def synchronise(url, query, api_key, published_after, max_results):
     print(SCHEDULER_ACTIVE)
     threading.Thread(target=DbHelper.sync_db_with_yt, args=(url, query, api_key, published_after, max_results)).start()
     # DbHelper.sync_db_with_yt(url, query, api_key, published_after, max_results)
-    time.sleep(60)
+    time.sleep(10)
     print("Task execution completed.")
     if (SCHEDULER_ACTIVE):
         synchronise(url, query, api_key, published_after, max_results)
@@ -43,7 +43,7 @@ def create_app(testing : bool =  True):
     app.config["PUBLISHED_AFTER"] = "2021-05-22T10:00:00Z"
     app.config["MAX_RESULTS"] = 50
     app.config["YOUTUBE_URL"] = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&key={api_key}&q={query}&publishedAfter={published_after}&maxResults={max_results}"
-    app.config["FAMPAY_KEY"] = "17yEEyXAqeS9JNDpTlBvKLUBr9CfRP1ay4kf"
+    app.config["FAMPAY_KEY"] = "APz79z0nK311PXHIsDs24WtA24c3Zgygk55z"
 
     SCHEDULER_ACTIVE = False
 
